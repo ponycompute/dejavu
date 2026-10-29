@@ -12,7 +12,7 @@
     "replay",
     "cli"
   ],
-  "author": "qyinm",
+  "author": "ponycompute",
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
