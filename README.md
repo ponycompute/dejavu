@@ -11,6 +11,10 @@ a pixel-exact cell grid, then encodes an MP4. So you can:
 - pick the window size, playback speed and resolution after the fact
 - keep everything on your machine — nothing is uploaded anywhere
 
+| Claude Code | Codex | Grok Build |
+|---|---|---|
+| ![Claude Code](docs/claude-code.png) | ![Codex](docs/codex.png) | ![Grok Build](docs/grok.png) |
+
 ## Usage
 
 ```bash
@@ -50,6 +54,11 @@ video), but the spinner shows the real elapsed time of each turn from the log's 
 | Codex | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` | ✅ |
 | Grok Build | `~/.grok/sessions/<cwd>/<id>/updates.jsonl` | ✅ |
 
+Each agent's UI follows a specific release: Claude Code 2.x, Codex CLI 0.165 and Grok Build 1.0.70.
+For Grok, Dejavu also reads your `~/.grok/config.toml` (compact mode, permission mode) and models
+cache so the replay matches how your own Grok looks. Set `GROK_HOME` / `CODEX_HOME` if those
+agents keep their data elsewhere.
+
 ## How it works
 
 ```
@@ -64,6 +73,12 @@ session log ─▶ agents/<agent>/parse.ts   normalized events (prompt, reply, t
 Adding an agent means implementing the `Agent` interface in `src/core/types.ts` (detect, list
 sessions, parse, build a scene) and registering it in `src/agents/index.ts`. Text layout, the
 timeline, drawing and encoding are shared.
+
+## License
+
+Apache-2.0. The Codex and Grok Build screens are recreated from those projects' open-source TUIs
+(also Apache-2.0); see [NOTICE](NOTICE). Claude Code, Codex and Grok are trademarks of their
+owners, and Dejavu is not affiliated with them.
 
 ## Development
 

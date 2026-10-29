@@ -2,24 +2,37 @@
   "name": "dejavu",
   "version": "0.1.0",
   "description": "Replay a coding-agent session as a video that looks exactly like the agent's own UI",
-  "type": "module",
+  "keywords": [
+    "claude-code",
+    "codex",
+    "grok",
+    "coding-agent",
+    "terminal",
+    "video",
+    "replay",
+    "cli"
+  ],
+  "author": "qyinm",
   "license": "Apache-2.0",
+  "type": "module",
   "bin": {
     "dejavu": "bin/dejavu.js"
   },
   "files": [
     "bin",
-    "dist"
+    "dist",
+    "NOTICE"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
     "dev": "tsx src/cli.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsx --test test/*.test.ts",
-    "sample": "tsx fixtures/make-sample.ts && tsx src/cli.ts fixtures/claude-code-sample.jsonl -o out/sample.mp4"
+    "sample": "tsx fixtures/make-sample.ts && tsx src/cli.ts fixtures/claude-code-sample.jsonl -o out/sample.mp4",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
     "@fontsource/jetbrains-mono": "^5.3.0",

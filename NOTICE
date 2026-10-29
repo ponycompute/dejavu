@@ -1,0 +1,16 @@
+Dejavu
+Copyright 2026 qyinm
+
+This product recreates the terminal UIs of other coding agents. Parts of it are
+derived from their open-source code, both licensed under the Apache License 2.0:
+
+- Codex CLI (https://github.com/openai/codex), codex-rs/tui: the idle-screen
+  logo animation in src/agents/codex/logo.ts and the transcript layout rules in
+  src/agents/codex/ui.ts. Copyright OpenAI.
+
+- Grok Build (https://github.com/xai-org/grok-build), xai-grok-pager: the
+  GrokNight palette, the welcome-screen logo art and shimmer, and the layout
+  rules in src/agents/grok/. Copyright SpaceXAI.
+
+Claude Code, Codex and Grok are trademarks of their respective owners. Dejavu is
+not affiliated with or endorsed by Anthropic, OpenAI or xAI.
