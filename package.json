@@ -1,5 +1,5 @@
 {
-  "name": "dejavu",
+  "name": "agent-dejavu",
   "version": "0.1.0",
   "description": "Replay a coding-agent session as a video that looks exactly like the agent's own UI",
   "keywords": [
@@ -13,6 +13,14 @@
     "cli"
   ],
   "author": "ponycompute",
+  "homepage": "https://github.com/ponycompute/dejavu#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ponycompute/dejavu.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ponycompute/dejavu/issues"
+  },
   "license": "Apache-2.0",
   "type": "module",
   "bin": {

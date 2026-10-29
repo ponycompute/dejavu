@@ -24,11 +24,10 @@ diffs, todos and spinner.
 You need Node 20+ and [ffmpeg](https://ffmpeg.org) (`brew install ffmpeg` or `apt install ffmpeg`).
 
 ```bash
-git clone https://github.com/ponycompute/dejavu.git
-cd dejavu
-npm install && npm run build
-npm link    # puts `dejavu` on your PATH
+npm install -g agent-dejavu    # installs the `dejavu` command
 ```
+
+Or run it once without installing: `npx agent-dejavu`.
 
 ## Quick start
 
@@ -104,6 +103,7 @@ Issues and pull requests are welcome. Rendering bugs are easiest to fix with a s
 reproduces them. Strip anything private from the log before you attach it.
 
 ```bash
+git clone https://github.com/ponycompute/dejavu.git && cd dejavu && npm install
 npm run dev -- list    # run the CLI from source
 npm test
 npm run typecheck
