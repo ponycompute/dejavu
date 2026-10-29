@@ -43,11 +43,15 @@ export interface RendererOptions {
   rows: number;
   theme: Theme;
   title: string;
+  /** Paint the gradient backdrop and window shadow (default). Off, the window sits on transparency. */
+  backdrop?: boolean;
 }
 
 export interface Renderer {
   width: number;
   height: number;
+  /** Where the terminal window sits in the frame, in pixels. */
+  window: { x: number; y: number; w: number; h: number };
   render(screen: Screen, t: number): Canvas;
 }
 
@@ -56,7 +60,7 @@ const ROW_CACHE_LIMIT = 400;
 
 export function createRenderer(opts: RendererOptions): Renderer {
   loadFonts();
-  const { width, height, cols, rows, theme, title } = opts;
+  const { width, height, cols, rows, theme, title, backdrop = true } = opts;
 
   // Pick a font size that makes the window fill the frame, so text is drawn at native resolution.
   const layout = (fontSize: number) => {
@@ -83,7 +87,7 @@ export function createRenderer(opts: RendererOptions): Renderer {
 
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
-  const base = drawBackdrop({ width, height, theme, title, winX, winY, scale, L });
+  const base = drawBackdrop({ width, height, theme, title, winX, winY, scale, L, backdrop });
 
   const cache = new Map<Row, Canvas>();
   function rowBitmap(row: Row, t: number): Canvas {
@@ -194,7 +198,12 @@ export function createRenderer(opts: RendererOptions): Renderer {
     return canvas;
   }
 
-  return { width, height, render };
+  return {
+    width,
+    height,
+    window: { x: winX, y: winY, w: L.winW * scale, h: L.winH * scale },
+    render,
+  };
 }
 
 interface BackdropOptions {
@@ -206,12 +215,19 @@ interface BackdropOptions {
   winY: number;
   scale: number;
   L: { u: number; winW: number; winH: number; bar: number };
+  backdrop: boolean;
 }
 
 // Static backdrop and window chrome, drawn once per video.
-function drawBackdrop({ width, height, theme, title, winX, winY, scale, L }: BackdropOptions): Canvas {
+function drawBackdrop({ width, height, theme, title, winX, winY, scale, L, backdrop }: BackdropOptions): Canvas {
   const base = createCanvas(width, height);
   const g = base.getContext("2d");
+  if (backdrop) paintBackdrop(g, width, height, theme);
+  drawWindow(g, theme, title, winX, winY, scale, L, backdrop);
+  return base;
+}
+
+function paintBackdrop(g: SKRSContext2D, width: number, height: number, theme: Theme): void {
   const lg = g.createLinearGradient(0, 0, width, height);
   lg.addColorStop(0, mix(theme.accent, "#000000", 0.72));
   lg.addColorStop(0.55, "#1a1414");
@@ -223,15 +239,19 @@ function drawBackdrop({ width, height, theme, title, winX, winY, scale, L }: Bac
   rg.addColorStop(1, withAlpha(theme.accent, 0));
   g.fillStyle = rg;
   g.fillRect(0, 0, width, height);
+}
 
+function drawWindow(g: SKRSContext2D, theme: Theme, title: string, winX: number, winY: number, scale: number, L: BackdropOptions["L"], shadow: boolean): void {
   const { u, winW, winH, bar } = L;
   const r = 12 * u;
   g.save();
   g.translate(winX, winY);
   g.scale(scale, scale);
-  g.shadowColor = "rgba(0,0,0,0.55)";
-  g.shadowBlur = 60 * u;
-  g.shadowOffsetY = 24 * u;
+  if (shadow) {
+    g.shadowColor = "rgba(0,0,0,0.55)";
+    g.shadowBlur = 60 * u;
+    g.shadowOffsetY = 24 * u;
+  }
   roundRect(g, 0, 0, winW, winH, r);
   g.fillStyle = theme.bg;
   g.fill();
@@ -260,7 +280,6 @@ function drawBackdrop({ width, height, theme, title, winX, winY, scale, L }: Bac
   g.textBaseline = "middle";
   g.fillText(title, winW / 2, bar / 2 + 1);
   g.restore();
-  return base;
 }
 
 // Quadrant block elements as [top-left, top-right, bottom-left, bottom-right].
