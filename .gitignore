@@ -4,3 +4,5 @@ out/
 *.mp4
 *.png
 !docs/*.png
+scripts/
+!docs/promo.mp4
