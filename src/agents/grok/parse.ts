@@ -69,26 +69,29 @@ export function parseGrokLines(lines: string[], summary: Json = {}, file = "<mem
   const events: SessionEvent[] = [];
   const calls = new Map<string, ToolEvent>();
   let lastTs: number | null = null;
+  // the context in use, from the token count the agent stamps on its updates
+  let contextTokens: number | null = null;
   // streamed chunks of one kind accumulate until another update arrives
-  let open: { kind: "user" | "assistant" | "thinking"; text: string; ts: number | null; start: number | null } | null = null;
-  // timestamps are whole seconds, so a thought's duration is the gap to the update that ended it
+  let open: { kind: "user" | "assistant" | "thinking"; text: string; ts: number | null; start: number | null; last: number | null } | null = null;
+  // a thought lasts from the model's stream start to its last chunk
   const flush = (end: number | null) => {
     if (!open) return;
     const text = open.text.trim();
     if (open.kind === "thinking") {
-      const durationMs = end != null && open.start != null ? end - open.start : null;
+      const last = open.last ?? end;
+      const durationMs = last != null && open.start != null ? last - open.start : null;
       events.push({ kind: "thinking", ts: open.ts, durationMs, ...(text ? { summary: text } : {}) });
     }
     else if (text) events.push({ kind: open.kind, text, ts: open.ts });
     open = null;
   };
-  // the model starts thinking when the previous update lands, before its first chunk arrives
-  const chunk = (kind: "user" | "assistant" | "thinking", text: string, ts: number | null, prev: number | null) => {
+  const chunk = (kind: "user" | "assistant" | "thinking", text: string, ts: number | null, start: number | null) => {
     if (open?.kind !== kind) {
       flush(ts);
-      open = { kind, text: "", ts, start: prev ?? ts };
+      open = { kind, text: "", ts, start: start ?? ts, last: null };
     }
     open!.text += text;
+    open!.last = ts;
   };
 
   for (const line of lines) {
@@ -101,19 +104,23 @@ export function parseGrokLines(lines: string[], summary: Json = {}, file = "<mem
     }
     const u = rec.params?.update;
     if (!u) continue;
-    const ts = typeof rec.timestamp === "number" ? rec.timestamp * 1000 : null;
-    const prev = lastTs;
+    // newer logs stamp each update in milliseconds; the record's own timestamp is whole seconds
+    const m = rec.params?._meta ?? {};
+    const ts = typeof m.agentTimestampMs === "number" ? m.agentTimestampMs : typeof rec.timestamp === "number" ? rec.timestamp * 1000 : null;
+    // without a stream start, a thought is taken to begin when the previous update landed
+    const start = typeof m.streamStartMs === "number" ? m.streamStartMs : lastTs;
     lastTs = ts ?? lastTs;
+    if (typeof m.totalTokens === "number") contextTokens = m.totalTokens;
     meta.sessionId ??= rec.params?.sessionId ?? null;
     switch (u.sessionUpdate) {
       case "user_message_chunk":
-        chunk("user", textOf(u.content), ts, prev);
+        chunk("user", textOf(u.content), ts, start);
         break;
       case "agent_message_chunk":
-        chunk("assistant", textOf(u.content), ts, prev);
+        chunk("assistant", textOf(u.content), ts, start);
         break;
       case "agent_thought_chunk":
-        chunk("thinking", textOf(u.content), ts, prev);
+        chunk("thinking", textOf(u.content), ts, start);
         break;
       case "tool_call": {
         flush(ts);
@@ -158,12 +165,8 @@ export function parseGrokLines(lines: string[], summary: Json = {}, file = "<mem
       }
       case "turn_completed": {
         flush(ts);
-        // the log only has turn totals; the context at the end is roughly the last call's input,
-        // which grows over the turn, so take a quarter above the per-call average
-        const usage = u.usage ?? {};
-        const contextTokens = usage.inputTokens && usage.modelCalls ? Math.round((usage.inputTokens / usage.modelCalls) * 1.25) : undefined;
         if (u.stop_reason === "cancelled") events.push({ kind: "interrupted", ts });
-        else events.push({ kind: "turn-end", ts, durationMs: typeof u.elapsed_ms === "number" ? u.elapsed_ms : null, contextTokens });
+        else events.push({ kind: "turn-end", ts, durationMs: typeof u.elapsed_ms === "number" ? u.elapsed_ms : null, ...(contextTokens ? { contextTokens } : {}) });
         break;
       }
       case "hook_execution":

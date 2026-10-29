@@ -32,7 +32,7 @@ export const grok: Agent = {
     try {
       const buf = Buffer.alloc(4096);
       const head = buf.subarray(0, fs.readSync(fd, buf, 0, buf.length, 0)).toString("utf8");
-      return head.length === 0 || head.includes("\"_x.ai/session/update\"");
+      return head.length === 0 || /"(?:_x\.ai\/)?session\/update"/.test(head);
     } finally {
       fs.closeSync(fd);
     }

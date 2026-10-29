@@ -119,3 +119,17 @@ test("code blocks and tables end with a row of copy buttons", () => {
   assert.ok(text.includes("◇ code   [Copy]"));
   assert.ok(text.includes("◇ table   [Copy TSV]   [Copy CSV]   [Copy Markdown]"));
 });
+
+test("millisecond stamps time thoughts from the stream start and track the context in use", () => {
+  const line = (update: object, meta: object) =>
+    JSON.stringify({ timestamp: 1, method: "session/update", params: { sessionId: "s", update, _meta: meta } });
+  const { events } = parseGrokLines([
+    line({ sessionUpdate: "agent_thought_chunk", content: { type: "text", text: "Plan" } }, { agentTimestampMs: 5_621, streamStartMs: 3_584, totalTokens: 2_519 }),
+    line({ sessionUpdate: "agent_message_chunk", content: { type: "text", text: "Done." } }, { agentTimestampMs: 5_700, streamStartMs: 3_584, totalTokens: 56_330 }),
+    line({ sessionUpdate: "turn_completed", stop_reason: "end_turn", elapsed_ms: 3_000 }, {}),
+  ]);
+  const thought = events.find((e) => e.kind === "thinking");
+  assert.ok(thought?.kind === "thinking" && thought.durationMs === 2_037);
+  const end = events.find((e) => e.kind === "turn-end");
+  assert.ok(end?.kind === "turn-end" && end.contextTokens === 56_330);
+});
